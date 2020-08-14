@@ -19,7 +19,6 @@ import random
 from scipy import stats
 from multiprocessing import Pool
 import time 
-import tqdm
 from numba import jit
 
 # %%
@@ -31,6 +30,7 @@ dfe = pd.read_csv('dfe_cylindrical.csv')
 energy_list = dfe['energy'].unique()
 
 # %%
+# Function to sample neutron capture multiplicity at given energy
 @jit(cache=True)
 def ncap_num(energy, num_n=1):
     
