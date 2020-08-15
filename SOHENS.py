@@ -38,7 +38,7 @@ def ncap_num(energy, num_n=1):
     points = dfenergyncap[['energy','ncapcount']].to_numpy()
     values = dfenergyncap['eventcount'].to_numpy()
 
-    num_n_cap = range(40)
+    num_n_cap = range(max(dfenergyncap['ncapcount'])+1)
     energy,num_n_cap = np.meshgrid(energy,num_n_cap)
     # interpolate
     grid_z0 = griddata(points, values, (energy,num_n_cap), method='linear')
@@ -159,8 +159,8 @@ def combine_rho_z_t_samples(en,num=1):
 def interp_rho_z_t(energy, num=1):
 
     """
-    Gives samples of rho and z at given energy based on values
-    interpolated from data.
+    Gives samples of rho, z and t at given energy based on values
+    interpolated from sampled data.
     """
 
     loc_left = np.searchsorted(energy_list, energy, side='right')-1
@@ -181,7 +181,7 @@ def interp_rho_z_t(energy, num=1):
     while i < np.shape(samplearr1)[0]:
         new_data1 = samplearr1[i]
         new_data2 = samplearr2[i]
-        values_to_interp = np.vstack([new_data1, new_data2])#.transpose()
+        values_to_interp = np.vstack([new_data1, new_data2])
         list_out.append(griddata([en1, en2], values_to_interp, energy, method='linear', rescale=True))
         i+=1
 
@@ -204,8 +204,8 @@ def ncap_sim(energy, num_n=1):
 # %%
 # Run simulation
 t0 = time.time()
-energy_test = 789 # Initial energy
-numn_test = 405 # Initial number of neutrons
+energy_test = 400 # Initial energy
+numn_test = 2000 # Initial number of neutrons
 dfresults = ncap_sim(energy_test, numn_test) # Create dataframe of results
 t1 = time.time()
 
@@ -216,6 +216,7 @@ print('Execution time: ', total)
 dfresults.to_csv(f'dfmvuv_e{energy_test}_n{numn_test}_bw0.10.csv')
 
 # %%
+################# Plotting Results ##################################
 # Plotting sim results
 # Scatter plot sim rho z
 # Calculate the point density
@@ -233,6 +234,9 @@ ax.scatter(x, y, c=z, s=2, edgecolor='')
 plt.xlabel('rho (m)')
 plt.ylabel('z (m)')
 plt.title(f'{numn_test} Initial neutrons at {energy_test} MeV')
+plt.xlim(right=12)
+plt.ylim(bottom=-2,top=12)
+plt.savefig(f'images/sim_plot_rho_z_n{numn_test}e{energy_test}.png', dpi=800, bbox_inches='tight')
 plt.show()
 
 
@@ -253,6 +257,65 @@ ax.scatter(x, y, c=z, s=2, edgecolor='')
 plt.xlabel('rho (m)')
 plt.ylabel('t (microsec)')
 plt.title(f'{numn_test} Initial neutrons at {energy_test} MeV')
+plt.xlim(right=12)
+plt.ylim(top=1600)
+plt.savefig(f'images/sim_plot_r_t_n{numn_test}e{energy_test}.png', dpi=800, bbox_inches='tight')
 plt.show()
+
+
+# %%
+# Plotting data results
+# Scatter plot sim rho z
+# Calculate the point density
+datarho = dfe.loc[dfe['energy'] == energy_test]['rho'].reset_index(drop=True)
+dataz = dfe.loc[dfe['energy'] == energy_test]['z'].reset_index(drop=True)
+x = datarho
+y = dataz
+xy = np.vstack([x,y])
+z = stats.gaussian_kde(xy)(xy)
+
+# Sort the points by density, so that the densest points are plotted last
+idx = z.argsort()
+x, y, z = x[idx], y[idx], z[idx]
+
+fig, ax = plt.subplots()
+ax.scatter(x, y, c=z, s=2, edgecolor='')
+plt.xlabel('rho (m)')
+plt.ylabel('z (m)')
+plt.title(f'{numn_test} Initial neutrons at {energy_test} MeV')
+plt.xlim(right=12)
+plt.ylim(bottom=-2,top=12)
+plt.savefig(f'images/data_plot_rho_z_n{numn_test}e{energy_test}.png', dpi=800, bbox_inches='tight')
+plt.show()
+
+# %%
+# Scatter plot data rho t 
+# Calculate the point density
+datarho = dfe.loc[dfe['energy'] == energy_test]['rho'].reset_index(drop=True)
+datat = dfe.loc[dfe['energy'] == energy_test]['t'].reset_index(drop=True)
+x = np.sqrt(datarho**2+dataz**2)
+y = datat
+xy = np.vstack([x,y])
+z = stats.gaussian_kde(xy)(xy)
+
+# Sort the points by density, so that the densest points are plotted last
+idx = z.argsort()
+x, y, z = x[idx], y[idx], z[idx]
+
+fig, ax = plt.subplots()
+ax.scatter(x, y, c=z, s=2, edgecolor='')
+plt.xlabel('rho (m)')
+plt.ylabel('t (microsec)')
+plt.title(f'{numn_test} Initial neutrons at {energy_test} MeV')
+plt.xlim(right=12)
+plt.ylim(top=1600)
+plt.savefig(f'images/data_plot_r_t_n{numn_test}e{energy_test}.png', dpi=800, bbox_inches='tight')
+plt.show()
+
+
+
+# %%
+
+# %%
 
 # %%
